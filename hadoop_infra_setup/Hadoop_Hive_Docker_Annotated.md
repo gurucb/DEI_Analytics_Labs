@@ -367,7 +367,10 @@ flowchart LR
 
     HS2 --> HMS
     HMS --> PG
+    HMS --> NN
     HS2 --> ZK
+    HS2 --> NM
+    HS2 --> RM
 
     HCLI --> NN
     HCLI --> RM
