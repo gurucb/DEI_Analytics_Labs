@@ -12,6 +12,7 @@ This lab demonstrates how to set up a Hadoop cluster using Docker Compose. The c
   - HDFS NameNode & DataNodes
   - YARN ResourceManager, NodeManager, HistoryServer
   - Hadoop CLI
+- Download docker-compose.yaml file from hadoop_infra_setup\docker-compose.yaml
 
 ---
 

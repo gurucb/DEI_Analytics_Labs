@@ -5,34 +5,8 @@ This document explains each part of the provided Docker Compose configuration so
 
 > **What you get**: HDFS (NameNode + two DataNodes), YARN (ResourceManager + NodeManager), Hadoop CLI, ZooKeeper, Hive Metastore (PostgreSQL), Hive Metastore service, HiveServer2, and a Hive CLI.
 
----
 
-## Quick Start
-1. Docker or Docker Desktop is needed. On Windows preferred option is WSL2 integrated with Docker Desktop.
-1. Save the YAML into `docker-compose.yml`.
-2. Create the local folders referenced by `volumes`:
-   ```bash
-   mkdir -p ./data/hdfs/namenode ./data/hdfs/datanode1 ./data/hdfs/datanode2 \
-           ./data/hdfs/historyserver ./data/metastore-postgres ./workdir
-   ```
-3. Start services (you can bring up everything or in stages):
-   ```bash
-   docker compose up -d
-   # or start subsets, e.g.
-   docker compose up -d zookeeper namenode datanode1 datanode2 resourcemanager nodemanager1 hadoop-cli hive-metastore-db hive-metastore hive-server hive-cli historyserver
-   ```
-4. Verify key UIs:
-   - NameNode: `http://localhost:9870`
-   - DataNode1: `http://localhost:9864`
-   - DataNode2: `http://localhost:9865` (host maps to container 9864)
-   - ResourceManager: `http://localhost:8088`
-   - NodeManager: `http://localhost:8042`
-   - JobHistory: `http://localhost:8188`
-   - HiveServer2 (JDBC): `jdbc:hive2://localhost:10000/` (no auth)
-
----
-
-## Full Compose with Inline Commentary
+## Full Docker Compose with Inline Commentary
 
 ```yaml
 services:
