@@ -8,6 +8,7 @@ This document explains each part of the provided Docker Compose configuration so
 ---
 
 ## Quick Start
+1. Docker or Docker Desktop is needed. On Windows preferred option is WSL2 integrated with Docker Desktop.
 1. Save the YAML into `docker-compose.yml`.
 2. Create the local folders referenced by `volumes`:
    ```bash
@@ -364,25 +365,25 @@ sudo rm -rf ./data ./workdir/*
 ```mermaid
 flowchart LR
     subgraph HDFS
-      NN[NameNode]\n:9870
-      DN1[DataNode1]\n:9864
-      DN2[DataNode2]\n:9864->host:9865
+      NN[NameNode]
+      DN1[DataNode1]
+      DN2[DataNode2]
     end
 
     subgraph YARN
-      RM[ResourceManager]\n:8088
-      NM[NodeManager]\n:8042
-      JH[JobHistory]\n:8188
+      RM[ResourceManager]
+      NM[NodeManager]
+      JH[JobHistory]
     end
 
     subgraph Hive
-      PG[(Metastore DB - Postgres)\n:5432]
-      HMS[Hive Metastore]\n:9083
-      HS2[HiveServer2]\n:10000
+      PG[(Metastore DB - Postgres)]
+      HMS[Hive Metastore]
+      HS2[HiveServer2]
       CLI[Hive CLI]
     end
 
-    ZK[ZooKeeper]\n:2181
+    ZK[ZooKeeper]
     HCLI[Hadoop CLI]
 
     NN --- DN1
