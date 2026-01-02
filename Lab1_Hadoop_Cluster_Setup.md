@@ -84,15 +84,15 @@ flowchart LR
     end
 
     subgraph HDFS[HDFS]
-        NN[NameNode]\n:9870
-        DN1[DataNode 1]\n:9864
-        DN2[DataNode 2]\n:9865
+        NN[NameNode]\\n\:9870
+        DN1[DataNode 1]\\n\9864
+        DN2[DataNode 2]\\n\:9865
     end
 
     subgraph YARN[YARN]
-        RM[ResourceManager]\n:8088
-        NM1[NodeManager]\n:8042
-        JHS[JobHistoryServer]\n:8188
+        RM[ResourceManager]\\n\:8088
+        NM1[NodeManager]\\n\:8042
+        JHS[JobHistoryServer]\\n\:8188
     end
 
     CLI[Hadoop CLI]
