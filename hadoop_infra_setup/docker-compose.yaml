@@ -1,0 +1,225 @@
+services:
+  # ===== HDFS (NameNode + DataNodes) =====
+ 
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-namenode
+    hostname: namenode
+    environment:
+      - CLUSTER_NAME=single-node-cluster
+      - HDFS_CONF_dfs_replication=1
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    ports:
+      - "9870:9870"
+      - "8020:8020"    # NameNode web UI
+    volumes:
+      - ./data/hdfs/namenode:/hadoop/dfs/namenode
+    networks:
+      - hadoop
+
+  datanode1:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-datanode1
+    hostname: datanode1
+    environment:
+      - CLUSTER_NAME=single-node-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    ports:
+      - "9864:9864"    # DataNode web UI
+    volumes:
+      - ./data/hdfs/datanode1:/hadoop/dfs/datanode
+    depends_on:
+      - namenode
+    networks:
+      - hadoop
+
+  datanode2:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-datanode2
+    hostname: datanode2
+    environment:
+      - CLUSTER_NAME=single-node-cluster
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    ports:
+      - "9865:9864"    # DataNode2 web UI mapped to a different host port
+    volumes:
+      - ./data/hdfs/datanode2:/hadoop/dfs/datanode
+    depends_on:
+      - namenode
+    networks:
+      - hadoop
+
+  # ===== YARN (ResourceManager + NodeManager) =====
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-resourcemanager
+    hostname: resourcemanager
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    ports:
+      - "8088:8088"    # ResourceManager web UI
+    depends_on:
+      - namenode
+    networks:
+      - hadoop
+
+  nodemanager1:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-nodemanager1
+    hostname: nodemanager1
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - YARN_CONF_yarn_nodemanager_aux_services=mapreduce_shuffle
+    ports:
+      - "8042:8042"    # NodeManager web UI
+    depends_on:
+      - resourcemanager
+    networks:
+      - hadoop
+  
+  # ===== Hadoop CLI (interactive client tools) =====
+  hadoop-cli:
+    image: bde2020/hadoop-base:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-cli
+    hostname: hadoop-cli
+    environment:
+      # Point Hadoop CLI to your HDFS
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      # Optional: run commands as 'hdfs' superuser for admin ops (or set to your user)
+      - HADOOP_USER_NAME=hdfs
+    stdin_open: true
+    tty: true
+    # Keep the container alive for interactive sessions
+    command: ["/bin/bash", "-c", "tail -f /dev/null"]
+    depends_on:
+      - namenode
+      - datanode1
+      - datanode2
+      - resourcemanager
+    networks:
+      - hadoop
+    volumes:
+      # Optional: mount a local folder for scripts/data
+      - ./workdir:/workdir
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: hadoop-historyserver
+    hostname: historyserver
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+    ports:
+      - "8188:8188"    # JobHistory web UI
+    volumes:
+      - ./data/hdfs/historyserver:/hadoop/mr-history
+    depends_on:
+      - resourcemanager
+    networks:
+      - hadoop
+
+  # ===== ZooKeeper =====
+  zookeeper:
+    image: zookeeper:3.9
+    container_name: zookeeper
+    hostname: zookeeper
+    environment:
+      - ZOO_CLIENT_PORT=2181
+      - ZOO_TICK_TIME=2000
+      # For a single-node setup, you don't need myid/servers config
+    ports:
+      - "2181:2181"    # ZooKeeper client port
+    networks:
+      - hadoop
+
+  # ===== Hive Metastore DB (PostgreSQL) =====
+  hive-metastore-db:
+    image: postgres:13-alpine
+    container_name: hive-metastore-db
+    hostname: hive-metastore-db
+    environment:
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    volumes:
+      - ./data/metastore-postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - hadoop
+
+  # ===== Hive Metastore Service =====
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    hostname: hive-metastore
+    environment:
+      - SERVICE_NAME=metastore
+      - HIVE_METASTORE_DB_HOST=hive-metastore-db
+      - HIVE_METASTORE_DB_NAME=metastore
+      - HIVE_DB_USER=hive
+      - HIVE_DB_PASSWORD=hive
+      - HIVE_SITE_CONF_fs.defaultFS=hdfs://namenode:8020
+      - HIVE_SITE_CONF_hive.metastore.warehouse.dir=/user/hive/warehouse
+    ports:
+      - "9083:9083"    # Metastore Thrift
+    depends_on:
+      - hive-metastore-db
+      - namenode
+    networks:
+      - hadoop
+
+  # ===== HiveServer2 (JDBC/Beeline) =====
+ 
+ 
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    hostname: hive-server
+    environment:
+      - SERVICE_NAME=hiveserver2
+      # Core site (HDFS):
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+
+      # Hive site:
+      - "HIVE_SITE_CONF_hive.metastore.uris=thrift://hive-metastore:9083"
+      - "HIVE_SITE_CONF_hive.metastore.warehouse.dir=/user/hive/warehouse"
+      - "HIVE_SITE_CONF_hive.server2.thrift.port=10000"
+      - "HIVE_SITE_CONF_hive.server2.thrift.bind.host=hive-server"
+      - "HIVE_SITE_CONF_hive.server2.authentication=NONE"
+      - "HIVE_SITE_CONF_hive.server2.support.dynamic.service.discovery=true"
+      - "HIVE_SITE_CONF_hive.zookeeper.quorum=zookeeper:2181"
+      - "HIVE_SITE_CONF_hive.server2.zookeeper.namespace=hiveserver2"
+      - "HIVE_SITE_CONF_hive.server2.zookeeper.publish.configs=true"
+
+    ports:
+      - "10000:10000"
+    depends_on:
+      - hive-metastore
+      - resourcemanager
+      - nodemanager1
+      - zookeeper
+    networks:
+      - hadoop
+
+  hive-cli:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-cli
+    hostname: hive-cli
+    environment:
+      - SERVICE_NAME=hive-cli
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - HIVE_SITE_CONF_hive.metastore.uris=thrift://hive-metastore:9083
+      - HIVE_SITE_CONF_hive.server2.support.dynamic.service.discovery=true
+      - HIVE_SITE_CONF_hive.zookeeper.quorum=zookeeper:2181
+      - HIVE_SITE_CONF_hive.server2.zookeeper.namespace=hiveserver2
+      - HIVE_SITE_CONF_hive.server2.authentication=NONE
+    stdin_open: true
+    tty: true
+    depends_on:
+      - hive-server
+      - zookeeper
+    networks:
+      - hadoop
+networks:
+  hadoop:
+    driver: bridge

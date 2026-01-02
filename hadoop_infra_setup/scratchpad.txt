@@ -1,0 +1,13 @@
+# 3) Metastore DB + Metastore
+docker compose up -d hive-metastore-db hive-metastore
+
+# 4) Initialize HDFS dirs (now correctly hits namenode:8020)
+docker exec hadoop-namenode hdfs dfs -mkdir -p /user/hive/warehouse /tmp
+docker exec hadoop-namenode hdfs dfs -chmod -R 777 /user/hive/warehouse /tmp
+
+# 5) HiveServer2
+docker compose up -d hive-server
+sleep 5
+docker logs hive-server | grep -i 'zookeeper\\|hiveserver2\\|fs.defaultFS'
+
+docker compose up -d hive-cli
